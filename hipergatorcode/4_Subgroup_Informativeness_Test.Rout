@@ -1,0 +1,302 @@
+
+R version 4.3.3 (2024-02-29) -- "Angel Food Cake"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+[Previously saved workspace restored]
+
+> # File for testing NHANES for subgroup correlation using Sams test.
+> 
+> sub_ASD <- function(mdat, m_sub = 50, cores = 1, seed = 1,
++                     npctiles = 10, K = 50, useZ = "prespecified", Zvals = NULL) {
++   
++   clusters <- unique(mdat[, "cID"])
++   
++   cluster_groups <- split(
++     clusters,
++     ceiling(seq_along(clusters) / m_sub)
++   )
++   
++   dat_groups <- lapply(cluster_groups, function(x) {
++     mdat[mdat[, "cID"] %in% x, ]
++   })
++   
++   B <- length(dat_groups)
++   
++   set.seed(seed)
++   seeds <- sample.int(1e8, B)
++   
++   cl <- parallel::makeCluster(cores)
++   on.exit(parallel::stopCluster(cl))
++   
++   parallel::clusterEvalQ(cl, {
++     .libPaths(c("/orange/somnath.datta/NHANES/Rpackages", .libPaths()))
++     library(crspack)
++   })
++   
++   parallel::clusterExport(
++     cl,
++     c("dat_groups", "useZ", "npctiles", "K", "Zvals", "seeds"),
++     envir = environment()
++   )
++   
++   out <- parallel::parLapply(cl, seq_len(B), function(b) {
++     set.seed(seeds[b])
++     
++     x <- crspack::ASDpv(
++       mdat = dat_groups[[b]],
++       useZ = useZ,
++       Zvals = Zvals,
++       npctiles = npctiles,
++       K = K,
++       parallel = FALSE
++     )
++     
++     p <- pmin(pmax(x$pvalue, 1e-10), 1 - 1e-10)
++     p
++   })
++   
++   pvals <- unlist(out)
++   
++   zi <- qnorm(1 - pvals)
++   
++   z_stouffer <- sum(zi) / sqrt(length(zi))
++   p_stouffer <- 1 - pnorm(z_stouffer)
++   
++   list(
++     pvals = pvals,
++     zi = zi,
++     z_stouffer = z_stouffer,
++     p_stouffer = p_stouffer
++   )
++ }
+> 
+> 
+> ############################################################
+> # HiperGator setup
+> ############################################################
+> 
+> custom_lib <- "/orange/somnath.datta/NHANES/Rpackages"
+> 
+> .libPaths(c(custom_lib, .libPaths()))
+> 
+> Sys.setenv(R_LIBS = paste(.libPaths(), collapse = ":"))
+> Sys.setenv(R_LIBS_USER = custom_lib)
+> 
+> library(crspack)
+> library(dplyr)
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+> library(parallel)
+> 
+> cores <- 50
+> 
+> base_dir <- "/orange/somnath.datta/NHANES"
+> data_file <- file.path(base_dir, "FullData", "Tooth_Level_Data.RData")
+> 
+> res_dir <- file.path(base_dir, "ASD_Results")
+> dir.create(res_dir, showWarnings = FALSE, recursive = TRUE)
+> 
+> save_file <- file.path(res_dir, "ASD_cross_set_results_DISC_CUTS.RData")
+> summary_file <- file.path(res_dir, "ASD_cross_set_results_DISC_CUTS_summary.csv")
+> 
+> setwd(base_dir)
+> 
+> load(data_file)
+> 
+> ############################################################
+> # Clean data
+> ############################################################
+> 
+> df_clean <- na.omit(df_tooth_level)
+> 
+> df_clean <- df_clean %>%
++   group_by(SEQN) %>%
++   filter(n() > 9) %>%
++   ungroup()
+> 
+> ############################################################
+> # Define Z values
+> ############################################################
+> 
+> pdvals <- sort(unique(df_clean$maxPD) + 0.5)[-length(unique(df_clean$maxPD))]
+> calvals <- sort(unique(df_clean$maxCAL) + 0.5)[-length(unique(df_clean$maxCAL))]
+> 
+> set1 <- c("DS", "FS", "DSI", "FSI")
+> set2 <- c("maxCAL", "maxPD")
+> 
+> get_zvals <- function(zvar) {
++   if (zvar %in% set1) {
++     return(c(0.5))
++   }
++   
++   if (zvar == "maxPD") {
++     return(pdvals)
++   }
++   
++   if (zvar == "maxCAL") {
++     return(calvals)
++   }
++   
++   stop("No Zvals rule defined for: ", zvar)
++ }
+> 
+> ############################################################
+> # Define cross-set tests
+> ############################################################
+> 
+> pairs_1_to_2 <- expand.grid(
++   Y = set1,
++   Z = set2,
++   stringsAsFactors = FALSE
++ )
+> 
+> pairs_2_to_1 <- expand.grid(
++   Y = set2,
++   Z = set1,
++   stringsAsFactors = FALSE
++ )
+> 
+> pairs_all <- rbind(pairs_1_to_2, pairs_2_to_1)
+> 
+> ############################################################
+> # Run tests
+> ############################################################
+> 
+> results <- list()
+> 
+> for (r in seq_len(nrow(pairs_all))) {
++   
++   yvar <- pairs_all$Y[r]
++   zvar <- pairs_all$Z[r]
++   
++   result_name <- paste0("Y_", yvar, "__Z_", zvar)
++   
++   cat("Running:", result_name, "\n")
++   cat("Y =", yvar, "| Z =", zvar, "| cores =", cores, "\n")
++   
++   results[[result_name]] <- sub_ASD(
++     mdat = cbind(
++       cID = df_clean$SEQN,
++       Y   = df_clean[[yvar]],
++       Z   = df_clean[[zvar]]
++     ),
++     m_sub = 10,
++     K = 100,
++     useZ = "prespecified",
++     Zvals = get_zvals(zvar),
++     npctiles = 10,
++     cores = cores
++   )
++   
++   save(
++     results,
++     pairs_all,
++     file = save_file
++   )
++ }
+Running: Y_DS__Z_maxCAL 
+Y = DS | Z = maxCAL | cores = 50 
+Running: Y_FS__Z_maxCAL 
+Y = FS | Z = maxCAL | cores = 50 
+Running: Y_DSI__Z_maxCAL 
+Y = DSI | Z = maxCAL | cores = 50 
+Running: Y_FSI__Z_maxCAL 
+Y = FSI | Z = maxCAL | cores = 50 
+Running: Y_DS__Z_maxPD 
+Y = DS | Z = maxPD | cores = 50 
+Running: Y_FS__Z_maxPD 
+Y = FS | Z = maxPD | cores = 50 
+Running: Y_DSI__Z_maxPD 
+Y = DSI | Z = maxPD | cores = 50 
+Running: Y_FSI__Z_maxPD 
+Y = FSI | Z = maxPD | cores = 50 
+Running: Y_maxCAL__Z_DS 
+Y = maxCAL | Z = DS | cores = 50 
+Running: Y_maxPD__Z_DS 
+Y = maxPD | Z = DS | cores = 50 
+Running: Y_maxCAL__Z_FS 
+Y = maxCAL | Z = FS | cores = 50 
+Running: Y_maxPD__Z_FS 
+Y = maxPD | Z = FS | cores = 50 
+Running: Y_maxCAL__Z_DSI 
+Y = maxCAL | Z = DSI | cores = 50 
+Running: Y_maxPD__Z_DSI 
+Y = maxPD | Z = DSI | cores = 50 
+Running: Y_maxCAL__Z_FSI 
+Y = maxCAL | Z = FSI | cores = 50 
+Running: Y_maxPD__Z_FSI 
+Y = maxPD | Z = FSI | cores = 50 
+> 
+> ############################################################
+> # Save final results
+> ############################################################
+> 
+> save(
++   results,
++   pairs_all,
++   file = save_file
++ )
+> 
+> ############################################################
+> # Reload and summarize
+> ############################################################
+> 
+> load(save_file)
+> 
+> summary_res <- data.frame(
++   comparison = names(results),
++   Y = pairs_all$Y,
++   Z = pairs_all$Z,
++   z_stouffer = sapply(results, function(x) x$z_stouffer),
++   p_stouffer = sapply(results, function(x) x$p_stouffer),
++   row.names = NULL
++ )
+> 
+> write.csv(summary_res, summary_file, row.names = FALSE)
+> 
+> print(summary_res)
+        comparison      Y      Z  z_stouffer p_stouffer
+1   Y_DS__Z_maxCAL     DS maxCAL -13.0881795  1.0000000
+2   Y_FS__Z_maxCAL     FS maxCAL  22.4117696  0.0000000
+3  Y_DSI__Z_maxCAL    DSI maxCAL -32.5667913  1.0000000
+4  Y_FSI__Z_maxCAL    FSI maxCAL   8.8567765  0.0000000
+5    Y_DS__Z_maxPD     DS  maxPD -14.3137618  1.0000000
+6    Y_FS__Z_maxPD     FS  maxPD  30.6439289  0.0000000
+7   Y_DSI__Z_maxPD    DSI  maxPD -31.7409360  1.0000000
+8   Y_FSI__Z_maxPD    FSI  maxPD  16.5830997  0.0000000
+9   Y_maxCAL__Z_DS maxCAL     DS  -1.3743844  0.9153388
+10   Y_maxPD__Z_DS  maxPD     DS  -0.2391271  0.5944965
+11  Y_maxCAL__Z_FS maxCAL     FS  64.8886794  0.0000000
+12   Y_maxPD__Z_FS  maxPD     FS  82.2282459  0.0000000
+13 Y_maxCAL__Z_DSI maxCAL    DSI  -0.1236344  0.5491976
+14  Y_maxPD__Z_DSI  maxPD    DSI   0.4822902  0.3147999
+15 Y_maxCAL__Z_FSI maxCAL    FSI  26.3151844  0.0000000
+16  Y_maxPD__Z_FSI  maxPD    FSI  37.9526794  0.0000000
+> 
+> proc.time()
+   user  system elapsed 
+ 16.442   5.043 377.607 

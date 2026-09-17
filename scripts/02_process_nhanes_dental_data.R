@@ -685,6 +685,10 @@ df_person_level <- df %>%
 
 df_tooth_level <- Perio_tooth_level_allMeasures %>%
   full_join(
+    Perio_tooth_level,
+    by = c("SEQN", "ToothNumber", "Tooth_type")
+  ) %>%
+  full_join(
     Caries_tooth_level,
     by = c("SEQN", "ToothNumber", "Tooth_type")
   ) %>%
@@ -705,3 +709,4 @@ save(
   df_tooth_level,
   file = here("data", "Tooth_Level_Data.RData")
 )
+

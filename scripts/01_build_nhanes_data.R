@@ -1,19 +1,23 @@
 # 01_build_nhanes_data.R
 #
 # Purpose:
-#   Read NHANES 2011-2012 and 2013-2014 source files,
-#   combine survey cycles, merge datasets by SEQN,
-#   collect NHANES variable descriptions, and save the
-#   resulting datasets to the package data directory.
+#   Read NHANES 2011-2012 and 2013-2014 source files, combine survey cycles, 
+#   merge datasets by SEQN, collect NHANES variable descriptions, and save
+#   the resulting datasets to the package data directory.
 #
-# Input: raw data files from NHANES survey database. These files are specific to the 
-# data values required for this study. See the *_Oral_Health_Recorders_Procedures_Manual.pdf
-# for more information.
+# Input: 
+#    raw data files from NHANES survey database. These files are 
+#    specific to the data values required for this study. 
+#    See the *_Oral_Health_Recorders_Procedures_Manual.pdf
+#    for more information.
 #
 # Output:
-#   data/variable_info.csv containing all variable information
-#   data/nhanes_full.csv   containing all variable entries across all fields
-#   data/nhanes_perio.csv  containing only variable entries for periodontitis and caries related fields
+# data/variable_info.csv
+#   containing all variable information
+# data/nhanes_full.csv
+#   containing all variable entries across all fields
+# data/nhanes_perio.csv
+#   containing only variable entries for periodontitis and caries related fields
 
 # 1. LOAD REQUIRED PACKAGES
 
@@ -114,35 +118,12 @@ fulldata <- peri_all %>%
 
 # 8. DOWNLOAD NHANES VARIABLE INFORMATION
 
-url12_exam <- paste0(
-  "https://wwwn.cdc.gov/nchs/nhanes/search/variablelist.aspx?",
-  "Component=Examination&Cycle=2011-2012"
-)
-
-url12_demo <- paste0(
-  "https://wwwn.cdc.gov/nchs/nhanes/search/variablelist.aspx?",
-  "Component=Demographics&Cycle=2011-2012"
-)
-
-url12_ques <- paste0(
-  "https://wwwn.cdc.gov/nchs/nhanes/search/variablelist.aspx?",
-  "Component=Questionnaire&Cycle=2011-2012"
-)
-
-url34_exam <- paste0(
-  "https://wwwn.cdc.gov/nchs/nhanes/search/variablelist.aspx?",
-  "Component=Examination&Cycle=2013-2014"
-)
-
-url34_demo <- paste0(
-  "https://wwwn.cdc.gov/nchs/nhanes/search/variablelist.aspx?",
-  "Component=Demographics&Cycle=2013-2014"
-)
-
-url34_ques <- paste0(
-  "https://wwwn.cdc.gov/nchs/nhanes/search/variablelist.aspx?",
-  "Component=Questionnaire&Cycle=2013-2014"
-)
+url12_exam <- "https://wwwn.cdc.gov/nchs/nhanes/search/variablelist.aspx?Component=Examination&Cycle=2011-2012"
+url12_demo <- "https://wwwn.cdc.gov/nchs/nhanes/search/variablelist.aspx?Component=Demographics&Cycle=2011-2012"
+url12_ques <- "https://wwwn.cdc.gov/nchs/nhanes/search/variablelist.aspx?Component=Questionnaire&Cycle=2011-2012"
+url34_exam <- "https://wwwn.cdc.gov/nchs/nhanes/search/variablelist.aspx?Component=Examination&Cycle=2013-2014"
+url34_demo <- "https://wwwn.cdc.gov/nchs/nhanes/search/variablelist.aspx?Component=Demographics&Cycle=2013-2014"
+url34_ques <- "https://wwwn.cdc.gov/nchs/nhanes/search/variablelist.aspx?Component=Questionnaire&Cycle=2013-2014"
 
 # 9. EXTRACT VARIABLE DESCRIPTION TABLES
 
@@ -246,6 +227,3 @@ write.csv(
   here("data", "nhanes_perio.csv"),
   row.names = FALSE
 )
-
-# DONE
-

@@ -602,7 +602,6 @@ tl <- Perio_tooth_level %>% tbl_summary(
 ) %>%
   add_overall()
 
-
 #Tooth level stuff
 tlc <- Caries_tooth_level %>% tbl_summary(
   by = Age, 

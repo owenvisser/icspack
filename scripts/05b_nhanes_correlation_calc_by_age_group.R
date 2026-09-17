@@ -436,3 +436,87 @@ for (age_group in age_groups) {
     row.names = FALSE
   )
 }
+
+
+# ==================================================================================================
+# 13. SAVE AGE-SPECIFIC PEARSON TABLES AS IMAGES
+# ==================================================================================================
+
+library(gt)
+
+# Directory for figure output
+figures_dir <- here::here("figures")
+
+dir.create(
+  figures_dir,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+
+
+# Helper function to turn a Pearson table into a gt table
+make_pearson_gt_table <- function(tab, age_group) {
+
+  tab_display <- tab %>%
+    mutate(
+      `Caries Measure` = as.character(K),
+      `Periodontal Measure` = paste0(perio_group, " \u2265 ", threshold)
+    ) %>%
+    select(
+      `Caries Measure`,
+      `Periodontal Measure`,
+      no_weight,
+      CW,
+      PPW,
+      OPW,
+      MOPW
+    )
+
+  gt(tab_display) %>%
+    tab_header(
+      title = md("**NHANES Pearson Correlations**"),
+      subtitle = paste("Age group:", age_group)
+    ) %>%
+    cols_label(
+      no_weight = "No Weight",
+      CW = "CW",
+      PPW = "PPW",
+      OPW = "OPW",
+      MOPW = "MOPW"
+    ) %>%
+    tab_spanner(
+      label = "Weighting Method",
+      columns = c(no_weight, CW, PPW, OPW, MOPW)
+    ) %>%
+    cols_align(
+      align = "center",
+      columns = everything()
+    ) %>%
+    tab_options(
+      table.font.size = px(12),
+      data_row.padding = px(4),
+      heading.align = "center"
+    )
+}
+
+
+# Save one image per age group
+for (age_group in age_groups) {
+
+  age_file_label <- age_group %>%
+    stringr::str_replace_all("\\+", "plus") %>%
+    stringr::str_replace_all("-", "_")
+
+  gt_table <- make_pearson_gt_table(
+    tab = pearson_tables_by_age[[age_group]],
+    age_group = age_group
+  )
+
+  gtsave(
+    data = gt_table,
+    filename = file.path(
+      figures_dir,
+      paste0("nhanes_pearson_table_age_", age_file_label, ".png")
+    )
+  )
+}

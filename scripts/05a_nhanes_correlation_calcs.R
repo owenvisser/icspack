@@ -467,3 +467,92 @@ writeLines(
     "nhanes_pearson_table.tex"
   )
 )
+
+
+# ==================================================================================================
+# 13. SAVE OVERALL PEARSON TABLE AS IMAGE
+# ==================================================================================================
+
+library(gt)
+
+
+# Directory for figure output
+figures_dir <- here::here("figures")
+
+dir.create(
+  figures_dir,
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+
+
+# Prepare display table
+pearson_display <- pearson_wide_tab %>%
+  mutate(
+    `Caries Measure` = as.character(K),
+    `Periodontal Measure` = paste0(
+      perio_group,
+      " \u2265 ",
+      threshold
+    )
+  ) %>%
+  select(
+    `Caries Measure`,
+    `Periodontal Measure`,
+    no_weight,
+    CW,
+    PPW,
+    OPW,
+    MOPW
+  )
+
+
+# Create gt table
+pearson_gt <- gt(
+  pearson_display
+) %>%
+  
+  tab_header(
+    title = md("**NHANES Pearson Correlations**"),
+    subtitle = "Overall sample"
+  ) %>%
+  
+  cols_label(
+    no_weight = "No Weight",
+    CW = "CW",
+    PPW = "PPW",
+    OPW = "OPW",
+    MOPW = "MOPW"
+  ) %>%
+  
+  tab_spanner(
+    label = "Weighting Method",
+    columns = c(
+      no_weight,
+      CW,
+      PPW,
+      OPW,
+      MOPW
+    )
+  ) %>%
+  
+  cols_align(
+    align = "center",
+    columns = everything()
+  ) %>%
+  
+  tab_options(
+    table.font.size = px(12),
+    data_row.padding = px(4),
+    heading.align = "center"
+  )
+
+
+# Save as PNG
+gtsave(
+  data = pearson_gt,
+  filename = file.path(
+    figures_dir,
+    "nhanes_pearson_table_overall.png"
+  )
+)

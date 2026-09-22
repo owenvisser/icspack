@@ -442,7 +442,7 @@ params <- list(
   # Maximum cluster size
   # -----------------------------------------------------------------------------------------------
   
-  nmax = 100,
+  nmax = 10,
   
   
   # -----------------------------------------------------------------------------------------------
@@ -502,7 +502,7 @@ grid <- expand.grid(
   eta_y  = c(0, 4),
   rho_xy = c(0, 0.5),
   rho_uv = c(0, 0.5),
-  M      = c(20, 100),
+  M      = c(20),
   KEEP.OUT.ATTRS = FALSE
 )
 
@@ -538,9 +538,9 @@ dir.create(
 reps <- 100
 
 
-# Save 25 replicates in each RDS file
+# Save 100 replicates in each RDS file - can be adjusted later on.
 
-chunk_size <- 25
+chunk_size <- 100
 
 
 # Number of parallel scenario workers.
@@ -644,81 +644,96 @@ run_one_grid_scenario <- function(s) {
   )
 }
 
-
 # ==================================================================================================
-# 10. CREATE PARALLEL CLUSTER
-# ==================================================================================================
-
-# Windows uses PSOCK workers.
-#
-# IMPORTANT:
-#
-# "--vanilla" prevents each worker from reading the icspack .Rprofile.
-# This prevents every worker from attempting to activate renv at the
-# same time.
-
-cl <- parallel::makeCluster(
-  cores,
-  type = "PSOCK",
-  rscript_args = "--vanilla"
-)
-
-
-# ==================================================================================================
-# 11. EXPORT OBJECTS TO WORKERS
+# 10. RUN SIMULATION GRID IN PARALLEL
 # ==================================================================================================
 
-# Each PSOCK worker is a separate R process.
-#
-# Therefore, explicitly give each worker the functions and objects
-# required to run a simulation scenario.
-
-parallel::clusterExport(
-  cl,
-  varlist = c(
-    "params",
-    "grid",
-    "reps",
-    "chunk_size",
-    "save_dir",
-    "simulate_one_cluster",
-    "simulate_dataset",
-    "make_label",
-    "simulate_replicates",
-    "run_one_grid_scenario"
-  ),
-  envir = environment()
-)
-
-
-# ==================================================================================================
-# 12. RUN SIMULATION GRID IN PARALLEL
-# ==================================================================================================
-
-# The parallel jobs are the 32 grid scenarios.
-#
-# For example, with cores = 4, up to four different scenarios can
-# be simulated at the same time.
-
-out_list <- tryCatch(
+run_parallel_simulation <- function() {
   
-  parallel::parLapply(
+  # -----------------------------------------------------------------------------------------------
+  # Create PSOCK cluster
+  # -----------------------------------------------------------------------------------------------
+  
+  cl <- parallel::makeCluster(
+    cores,
+    type = "PSOCK",
+    rscript_args = "--vanilla"
+  )
+  
+  
+  # -----------------------------------------------------------------------------------------------
+  # ALWAYS close cluster when this function exits
+  #
+  # This runs if:
+  #   - the simulation completes normally
+  #   - an error occurs
+  #   - execution is interrupted normally by R
+  # -----------------------------------------------------------------------------------------------
+  
+  on.exit(
+    {
+      cat("\nClosing parallel workers...\n")
+      
+      try(
+        parallel::stopCluster(cl),
+        silent = TRUE
+      )
+      
+      rm(cl)
+      gc()
+      
+      cat("Parallel workers closed.\n")
+    },
+    add = TRUE
+  )
+  
+  
+  # -----------------------------------------------------------------------------------------------
+  # Export required objects and functions
+  # -----------------------------------------------------------------------------------------------
+  
+  parallel::clusterExport(
+    cl,
+    varlist = c(
+      "params",
+      "grid",
+      "reps",
+      "chunk_size",
+      "save_dir",
+      "simulate_one_cluster",
+      "simulate_dataset",
+      "make_label",
+      "simulate_replicates",
+      "run_one_grid_scenario"
+    ),
+    envir = .GlobalEnv
+  )
+  
+  
+  # -----------------------------------------------------------------------------------------------
+  # Run grid scenarios
+  # -----------------------------------------------------------------------------------------------
+  
+  out <- parallel::parLapply(
     cl,
     seq_len(nrow(grid)),
     run_one_grid_scenario
-  ),
+  )
   
-  finally = {
-    
-    parallel::stopCluster(
-      cl
-    )
-  }
-)
+  
+  return(out)
+}
 
 
 # ==================================================================================================
-# 13. CREATE SIMULATION GRID INDEX
+# 11. RUN PARALLEL SIMULATION
+# ==================================================================================================
+
+out_list <- run_parallel_simulation()
+
+
+# ==================================================================================================
+# 12. CREATE SIMULATION GRID INDEX
 # ==================================================================================================
 
 grid_index <- do.call(

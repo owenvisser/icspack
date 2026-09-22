@@ -1,1 +1,13 @@
-data/
+data/sim/
+
+some_Dat/
+
+results/sim/
+
+figures/sim/
+
+#blocking custom files
+scripts/08_custom.R
+scripts/09_custom.R
+scripts/10_custom.R
+

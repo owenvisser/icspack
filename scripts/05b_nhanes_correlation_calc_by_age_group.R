@@ -120,13 +120,18 @@ df_clean <- df_clean %>%
 # Caries variables
 
 X_vars <- c(
+  "DS_score",
+  "FS_score",
+  "DSI_score",
+  "FSI_score"
+)
+
+K_vars <- c(
   "DS",
   "FS",
   "DSI",
   "FSI"
 )
-
-K_vars <- X_vars
 
 
 # Continuous periodontal outcomes
@@ -159,8 +164,7 @@ weight_types <- c(
   "no_weight",
   "CW",
   "PPW",
-  "OPW",
-  "MOPW"
+  "OPW"
 )
 
 

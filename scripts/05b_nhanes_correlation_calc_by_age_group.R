@@ -259,8 +259,7 @@ weight_order <- c(
   "no_weight",
   "CW",
   "PPW",
-  "OPW",
-  "MOPW"
+  "OPW"
 )
 
 K_order <- c(
@@ -472,8 +471,7 @@ make_pearson_gt_table <- function(tab, age_group) {
       no_weight,
       CW,
       PPW,
-      OPW,
-      MOPW
+      OPW
     )
 
   gt(tab_display) %>%
@@ -485,12 +483,11 @@ make_pearson_gt_table <- function(tab, age_group) {
       no_weight = "No Weight",
       CW = "CW",
       PPW = "PPW",
-      OPW = "OPW",
-      MOPW = "MOPW"
+      OPW = "OPW"
     ) %>%
     tab_spanner(
       label = "Weighting Method",
-      columns = c(no_weight, CW, PPW, OPW, MOPW)
+      columns = c(no_weight, CW, PPW, OPW)
     ) %>%
     cols_align(
       align = "center",

@@ -438,25 +438,25 @@ dir.create(
 ggsave(
   filename = file.path(
     figures_dir,
-    "nhanes_age_correlations_CAL.png"
+    "nhanes_age_correlations_CAL_600dpi.png"
   ),
   plot = cal_plot,
   width = 8,
   height = 5,
   units = "in",
-  dpi = 300
+  dpi = 600
 )
 
 ggsave(
   filename = file.path(
     figures_dir,
-    "nhanes_age_correlations_PD.png"
+    "nhanes_age_correlations_PD_600dpi.png"
   ),
   plot = pd_plot,
   width = 8,
   height = 5,
   units = "in",
-  dpi = 300
+  dpi = 600
 )
 
 

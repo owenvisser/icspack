@@ -190,7 +190,7 @@ metric_specs <- tribble(
 # 9. HEATMAP FUNCTION
 # ==================================================================================================
 
-make_heatmap_pearson_m20 <- function(dat, value_col, value_label, out_file) {
+make_heatmap_pearson_m20 <- function(dat, value_col, value_label, out_file, out_file_pdf) {
   
   subgroup_order <- c(
     "1 | 2-5",
@@ -341,6 +341,14 @@ make_heatmap_pearson_m20 <- function(dat, value_col, value_label, out_file) {
     height = 10,
     dpi = 300
   )
+
+  ggsave(
+    filename = out_file_pdf,
+    plot = p,
+    width = 7,
+    height = 10,
+    dpi = 300
+  )
   
   invisible(p)
 }
@@ -404,12 +412,26 @@ for (s in seq_len(nrow(representative_scenarios))) {
         ".png"
       )
     )
+
+    out_file_pdf <- file.path(
+      figure_dir,
+      paste0(
+        "pearson_m20_",
+        value_col,
+        "_rhoxy_", scen$rho_xy,
+        "_rhouv_", scen$rho_uv,
+        "_etax_", scen$eta_x,
+        "_etay_", scen$eta_y,
+        ".pdf"
+      )
+    )
     
     make_heatmap_pearson_m20(
       dat = dat_s,
       value_col = value_col,
       value_label = value_label,
-      out_file = out_file
+      out_file = out_file,
+      out_file_pdf = out_file_pdf
     )
   }
 }

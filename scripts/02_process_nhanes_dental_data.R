@@ -64,6 +64,9 @@ agedf <- peri.uid %>%
       DMDHRAGE,
       breaks = c(29, 49, 64, 80),
       labels = c("30-49", "50-64", "65+"),
+      # # special age groups for Dr. Datta
+      # breaks = c(9, 25, 40, 55, 70, 85, 100),
+      # labels = c("10-25", "26-40", "41-55", "56-70", "71-85", "86+"),
       include.lowest = TRUE
     )
   ) %>%
@@ -593,6 +596,9 @@ df <- peri.uid %>%
       DMDHRAGE,
       breaks = c(29, 49, 64, 80),
       labels = c("30-49", "50-64", "65+"),
+      # # special age groups for Dr. Datta
+      # breaks = c(9, 25, 40, 55, 70, 85, 100),
+      # labels = c("10-25", "26-40", "41-55", "56-70", "71-85", "86+"),
       include.lowest = TRUE
     ),
 

@@ -181,13 +181,86 @@ age_groups <- c(
 # 7. HELPER FUNCTION: RUN ALL WEIGHTS
 # ==================================================================================================
 
+run_nhanes_pearson_grid <- function(
+    dat,
+    Y_vars,
+    X_vars,
+    clusterID,
+    clusterSize,
+    K_vars,
+    L_vars,
+    surveyWeight,
+    weight_type = "no_weight"
+) {
+
+  cid <- dat[[clusterID]]
+  cis <- dat[[clusterSize]]
+  sw  <- dat[[surveyWeight]]
+
+  results <- list()
+  counter <- 1
+
+  if (length(Y_vars) != length(L_vars)) {
+    stop("Y_vars and L_vars must match length")
+  }
+
+  if (length(X_vars) != length(K_vars)) {
+    stop("X_vars and K_vars must match length")
+  }
+
+  for (l in seq_along(Y_vars)) {
+
+    for (k in seq_along(X_vars)) {
+
+      # Create the original informative-cluster-size weight
+      ics_weight <- make_weights(
+        clusterID = cid,
+        clusterSize = cis,
+        K = dat[[K_vars[k]]],
+        L = dat[[L_vars[l]]],
+        weight_type = weight_type
+      )
+
+      # Combine the NHANES sampling weight with the ICS weight
+      omega <- sw * ics_weight
+
+      # Calculate Pearson correlation using the combined weight
+      fit <- pearson_association(
+        clusterID = cid,
+        Y = dat[[Y_vars[l]]],
+        X = dat[[X_vars[k]]],
+        omega = omega
+      )
+
+      results[[counter]] <- data.frame(
+        Y = Y_vars[l],
+        L = L_vars[l],
+        X = X_vars[k],
+        K = K_vars[k],
+        weight_type = weight_type,
+        association_type = "pearson",
+        estimate = fit$rho,
+        variance = fit$variance,
+        se = fit$se,
+        lower_95 = unname(fit$ci[1]),
+        upper_95 = unname(fit$ci[2])
+      )
+
+      counter <- counter + 1
+    }
+  }
+
+  do.call(rbind, results)
+}
+
+
 run_all_weights <- function(dat) {
 
   results <- lapply(
     weight_types,
     function(wtype) {
 
-      run_association_grid(
+      run_nhanes_pearson_grid(
         dat = dat,
         Y_vars = pearson_Y_vars,
         X_vars = X_vars,
@@ -195,10 +268,9 @@ run_all_weights <- function(dat) {
         clusterSize = "Tooth_Count",
         K_vars = K_vars,
         L_vars = pearson_L_vars,
-        weight_type = wtype,
-        association_type = "pearson"
+        surveyWeight = "WTMEC4YR",
+        weight_type = wtype
       )
-
     }
   )
 

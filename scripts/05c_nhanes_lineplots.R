@@ -80,7 +80,7 @@ weight_order <- c(
 )
 
 weight_labels <- c(
-  no_weight = "None",
+  no_weight = "NW",
   CW        = "CW",
   OPW       = "OPW",
   PPW       = "PPW"
@@ -252,6 +252,11 @@ make_periodontal_plot <- function(
       shape = weight_type
     )
   ) +
+    geom_hline(
+      yintercept = 0,
+      color = "grey70",
+      linewidth = 0.3
+    ) +
 
     geom_line(
       linewidth = 0.8,
@@ -293,8 +298,8 @@ make_periodontal_plot <- function(
     scale_y_continuous(
       breaks = seq(
         -0.05,
-        0.20,
-        by = 0.05
+        0.30,
+        by = 0.1
       ),
       labels = scales::label_number(
         accuracy = 0.01
@@ -304,7 +309,7 @@ make_periodontal_plot <- function(
     coord_cartesian(
       ylim = c(
         -0.05,
-        0.20
+        0.30
       )
     ) +
 
@@ -438,25 +443,25 @@ dir.create(
 ggsave(
   filename = file.path(
     figures_dir,
-    "nhanes_age_correlations_CAL_600dpi.png"
+    "nhanes_age_correlations_CAL_300dpi.png"
   ),
   plot = cal_plot,
   width = 8,
   height = 5,
   units = "in",
-  dpi = 600
+  dpi = 300
 )
 
 ggsave(
   filename = file.path(
     figures_dir,
-    "nhanes_age_correlations_PD_600dpi.png"
+    "nhanes_age_correlations_PD_300dpi.png"
   ),
   plot = pd_plot,
   width = 8,
   height = 5,
   units = "in",
-  dpi = 600
+  dpi = 300
 )
 
 

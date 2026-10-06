@@ -572,6 +572,9 @@ Caries_long <- Caries_long %>%
 # NHANES prefixes: OHX = oral health, SMQ = smoking questionnaire, DEMO = demographics
 df <- peri.uid %>%
   mutate(
+    # Four-year NHANES MEC examination weight for combined 2011-2014 data
+    WTMEC4YR = WTMEC2YR / 2,
+
     Gender = factor(
       case_when(
         RIAGENDR == 1 ~ "Male",
@@ -676,7 +679,10 @@ df <- peri.uid %>%
     Smoking_Status,
     Missing_Teeth,
     Teeth_Missing,
-    Tooth_Count
+    Tooth_Count,
+    WTMEC4YR,
+    SDMVSTRA,
+    SDMVPSU
   )
 
 
@@ -699,7 +705,14 @@ df_tooth_level <- Perio_tooth_level_allMeasures %>%
     by = c("SEQN", "ToothNumber", "Tooth_type")
   ) %>%
   left_join(
-    df %>% select(SEQN, Tooth_Count),
+    df %>%
+      select(
+        SEQN,
+        Tooth_Count,
+        WTMEC4YR,
+        SDMVSTRA,
+        SDMVPSU
+      ),
     by = "SEQN"
   )
 

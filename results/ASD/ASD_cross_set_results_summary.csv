@@ -1,17 +1,17 @@
-"comparison","Y","Z","z_stouffer","p_stouffer"
-"Y_DS__Z_maxCAL","DS","maxCAL",-9.51686921405584,1
-"Y_FS__Z_maxCAL","FS","maxCAL",50.3315258468002,0
-"Y_DSI__Z_maxCAL","DSI","maxCAL",-23.4122466896847,1
-"Y_FSI__Z_maxCAL","FSI","maxCAL",19.6004031846779,0
-"Y_DS__Z_maxPD","DS","maxPD",-3.82461397727254,0.99993451142846
-"Y_FS__Z_maxPD","FS","maxPD",59.4879271124086,0
-"Y_DSI__Z_maxPD","DSI","maxPD",-18.7606108059934,1
-"Y_FSI__Z_maxPD","FSI","maxPD",34.0616088553539,0
-"Y_maxCAL__Z_DS","maxCAL","DS",8.17474638366531,1.11022302462516e-16
-"Y_maxPD__Z_DS","maxPD","DS",4.58563053248824,2.26309193340768e-06
-"Y_maxCAL__Z_FS","maxCAL","FS",112.219346061568,0
-"Y_maxPD__Z_FS","maxPD","FS",125.58401723031,0
-"Y_maxCAL__Z_DSI","maxCAL","DSI",-0.686899514320137,0.753926973487073
-"Y_maxPD__Z_DSI","maxPD","DSI",-2.35389367867359,0.990711037996986
-"Y_maxCAL__Z_FSI","maxCAL","FSI",59.1632575708515,0
-"Y_maxPD__Z_FSI","maxPD","FSI",73.8942905205764,0
+"comparison","direction","Y","Z","Z_cutpoints","z_stouffer","p_stouffer"
+"Y_DS__Z_maxCAL","Caries Y / Periodontal Z","DS","maxCAL","2.5, 3.5, 4.5",-11.952734559052,1
+"Y_FS__Z_maxCAL","Caries Y / Periodontal Z","FS","maxCAL","2.5, 3.5, 4.5",30.1669554593719,0
+"Y_DSI__Z_maxCAL","Caries Y / Periodontal Z","DSI","maxCAL","2.5, 3.5, 4.5",-31.4732414942935,1
+"Y_FSI__Z_maxCAL","Caries Y / Periodontal Z","FSI","maxCAL","2.5, 3.5, 4.5",11.3022188015158,0
+"Y_DS__Z_maxPD","Caries Y / Periodontal Z","DS","maxPD","3.5, 4.5, 5.5",-13.982202729712,1
+"Y_FS__Z_maxPD","Caries Y / Periodontal Z","FS","maxPD","3.5, 4.5, 5.5",3.70302237498075,0.000106523041954132
+"Y_DSI__Z_maxPD","Caries Y / Periodontal Z","DSI","maxPD","3.5, 4.5, 5.5",-27.1342147810883,1
+"Y_FSI__Z_maxPD","Caries Y / Periodontal Z","FSI","maxPD","3.5, 4.5, 5.5",0.0246995311900249,0.490147314511841
+"Y_maxCAL__Z_DS","Periodontal Y / Caries Z","maxCAL","DS","0.5",2.02858742741726,0.0212501651002289
+"Y_maxPD__Z_DS","Periodontal Y / Caries Z","maxPD","DS","0.5",0.576357615540306,0.28218674335293
+"Y_maxCAL__Z_FS","Periodontal Y / Caries Z","maxCAL","FS","0.5",69.3073865018432,0
+"Y_maxPD__Z_FS","Periodontal Y / Caries Z","maxPD","FS","0.5",85.3029261510467,0
+"Y_maxCAL__Z_DSI","Periodontal Y / Caries Z","maxCAL","DSI","0.5",-1.78247772973004,0.962664320120826
+"Y_maxPD__Z_DSI","Periodontal Y / Caries Z","maxPD","DSI","0.5",-3.31971089643202,0.999549446434941
+"Y_maxCAL__Z_FSI","Periodontal Y / Caries Z","maxCAL","FSI","0.5",27.6975434774734,0
+"Y_maxPD__Z_FSI","Periodontal Y / Caries Z","maxPD","FSI","0.5",39.9132454940804,0

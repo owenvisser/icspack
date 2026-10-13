@@ -15,3 +15,5 @@ The analyses compare standard cluster weighting with subgroup-based weighting ap
 ## Reproducibility
 
 Run the scripts in numerical order from the root `icspack` directory. Package dependencies are managed using `renv`.
+Restore the analysis environment with `renv::restore()`, then run the scripts
+in numerical order from the root `icspack` directory.

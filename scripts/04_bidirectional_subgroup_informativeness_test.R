@@ -1,20 +1,20 @@
 ####################################################################################################
 #
-# NHANES SUBGROUP ASSOCIATION TESTING
+# 04_bidirectional_subgroup_informativeness_test.R
 #
-# This script tests associations between the caries variables
+# NHANES BIDIRECTIONAL DS / FS / PERIODONTAL SUBGROUP INFORMATIVENESS TESTING
 #
-#   DS, FS, DSI, FSI
-#
-# and the periodontal variables
-#
-#   maxCAL, maxPD
-#
+# Tests DS, DSI, FS, and FSI against maxCAL and maxPD in both directions
 # using crspack::ASDpv().
 #
-# Subjects are divided into smaller groups of clusters, ASDpv() is
-# run separately within each group, and the resulting p-values are
-# combined using Stouffer's method.
+# When a binary caries measure defines the subgroup, the only cutpoint is 0.5.
+# When maxCAL or maxPD defines the subgroup, every distinct observed split is tested.
+# Because the periodontal measures are integer-valued, these cutpoints are formed by
+# adding 0.5 to every observed value except the maximum.
+#
+# Subjects are divided into independent groups of 10 clusters. ASDpv() is run
+# separately within each group and the resulting p-values are combined using
+# Stouffer's method.
 #
 ####################################################################################################
 
@@ -49,12 +49,10 @@ m_sub <- 10
 
 
 # Number of permutations used by ASDpv().
-#
-# Start small when testing the script locally.
-K <- 5
+K <- 100
 
-# For the full analysis:
-# K <- 100
+# For a quick local code check:
+# K <- 5
 
 
 # Number of percentile cutoffs used by ASDpv().
@@ -76,7 +74,7 @@ seed <- 1
 
 data_file <- file.path(
   "data",
-  "Tooth_Level_data.RData"
+  "Tooth_Level_Data.RData"
 )
 
 
@@ -181,63 +179,37 @@ set2 <- c(
 # 7. DEFINE PRESPECIFIED Z CUTPOINTS
 # ==================================================================================================
 
-# DS, FS, DSI, and FSI are binary variables.
+# Caries variables are binary, so zero versus nonzero is separated at 0.5.
 #
-# Therefore, when one of these variables is used as Z, the natural
-# separating cutoff is 0.5.
-
-
-# maxPD and maxCAL are discrete periodontal measurements.
+# Periodontal variables use the same three clinically defined subgroup
+# cutpoints used in the association analysis:
 #
-# The cutoffs are placed halfway between consecutive observed values.
-#
-# For example:
-#
-#   observed values:
-#
-#       0, 1, 2, 3
-#
-#   resulting cutoffs:
-#
-#       0.5, 1.5, 2.5
-
-
-pd_unique <- sort(
-  unique(df_clean$maxPD)
-)
-
-pdvals <- pd_unique + 0.5
-
-pdvals <- pdvals[
-  -length(pdvals)
-]
-
-
-cal_unique <- sort(
-  unique(df_clean$maxCAL)
-)
-
-calvals <- cal_unique + 0.5
-
-calvals <- calvals[
-  -length(calvals)
-]
-
-
-# Function returning the correct cutoffs according to which
-# variable is being used as Z.
+#   maxCAL: 2.5, 3.5, 4.5  -> CAL >= 3, >= 4, >= 5
+#   maxPD:  3.5, 4.5, 5.5  -> PD  >= 4, >= 5, >= 6
 
 get_zvals <- function(zvar) {
   if (zvar %in% set1) {
     return(0.5)
   }
 
-  if (zvar == "maxPD") {
-    return(pdvals)
+  if (zvar == "maxCAL") {
+    return(
+      c(
+        2.5,
+        3.5,
+        4.5
+      )
+    )
   }
 
-  if (zvar == "maxCAL") {
-    return(calvals)
+  if (zvar == "maxPD") {
+    return(
+      c(
+        3.5,
+        4.5,
+        5.5
+      )
+    )
   }
 
   stop(
@@ -270,6 +242,43 @@ pairs_all <- rbind(
   pairs_1_to_2,
   pairs_2_to_1
 )
+
+pairs_all$direction <- c(
+  rep(
+    "Caries Y / Periodontal Z",
+    nrow(pairs_1_to_2)
+  ),
+  rep(
+    "Periodontal Y / Caries Z",
+    nrow(pairs_2_to_1)
+  )
+)
+
+# Record the cutpoints used for each subgroup-defining variable.
+pairs_all$Z_cutpoints <- vapply(
+  pairs_all$Z,
+  function(zvar) {
+    paste(
+      get_zvals(zvar),
+      collapse = ", "
+    )
+  },
+  character(1)
+)
+
+
+# Create the comparison names once and verify that every requested test is unique.
+comparison_names <- paste0(
+  "Y_",
+  pairs_all$Y,
+  "__Z_",
+  pairs_all$Z
+)
+
+if (anyDuplicated(comparison_names)) {
+  stop("Duplicate comparison names were generated.")
+}
+
 
 # ==================================================================================================
 # 9. DEFINE SUBGROUP ASD FUNCTION
@@ -498,23 +507,13 @@ sub_ASD <- function(
 # 10. CREATE PARALLEL CLUSTER
 # ==================================================================================================
 
-# Save the library paths from the current R session.
-#
-# The first path is the renv library for this project.
 current_libpaths <- .libPaths()
 
-
-# Start PSOCK workers without reading .Rprofile.
-#
-# This prevents every worker from independently trying to activate
-# the same renv project at the same time.
 cl <- parallel::makePSOCKcluster(
   cores,
   rscript_args = "--vanilla"
 )
 
-
-# Give each worker the same package-library paths as the main R session.
 parallel::clusterCall(
   cl,
   function(paths) {
@@ -523,8 +522,6 @@ parallel::clusterCall(
   current_libpaths
 )
 
-
-# Load crspack on every worker.
 parallel::clusterEvalQ(
   cl,
   {
@@ -533,92 +530,98 @@ parallel::clusterEvalQ(
   }
 )
 
-# ==================================================================================================
-# 11. RUN ALL CROSS-SET TESTS
-# ==================================================================================================
-
-results <- list()
-
-
-for (r in seq_len(nrow(pairs_all))) {
-
-
-  # Variables for the current comparison.
-
-  yvar <- pairs_all$Y[r]
-
-  zvar <- pairs_all$Z[r]
-
-
-  # Name used to store the result.
-
-  result_name <- paste0(
-    "Y_",
-    yvar,
-    "__Z_",
-    zvar
-  )
-
-
-  # -----------------------------------------------------------------------------------------------
-  # ASDpv() expects a matrix containing:
-  #
-  #   cID = cluster / subject ID
-  #   Y   = response variable
-  #   Z   = subgroup-defining covariate
-  #
-  # Each subject therefore appears multiple times, once for each
-  # tooth contributing to the analysis.
-  # -----------------------------------------------------------------------------------------------
-
-  mdat <- cbind(
-    cID = df_clean$SEQN,
-    Y   = df_clean[[yvar]],
-    Z   = df_clean[[zvar]]
-  )
-
-
-  # -----------------------------------------------------------------------------------------------
-  # Run the subgroup ASD procedure.
-  # -----------------------------------------------------------------------------------------------
-
-  results[[result_name]] <- sub_ASD(
-    mdat = mdat,
-    cl = cl,
-    m_sub = m_sub,
-    seed = seed,
-    npctiles = npctiles,
-    K = K,
-    useZ = "prespecified",
-    Zvals = get_zvals(zvar)
-  )
-
-
-  # -----------------------------------------------------------------------------------------------
-  # Save after every completed comparison.
-  #
-  # This prevents loss of completed work if a later comparison takes
-  # a long time or the R session stops.
-  # -----------------------------------------------------------------------------------------------
-
-  saveRDS(
-    list(
-      results = results,
-      pairs_all = pairs_all
-    ),
-    file = save_file
-  )
-
-}
-
 
 # ==================================================================================================
-# 12. STOP PARALLEL CLUSTER
+# 11. RUN ALL BIDIRECTIONAL TESTS
 # ==================================================================================================
 
-parallel::stopCluster(
-  cl
+# Preallocate one result slot for every requested comparison.
+results <- setNames(
+  vector("list", nrow(pairs_all)),
+  comparison_names
 )
+
+# Always close the PSOCK workers, including after an error or user interrupt.
+tryCatch(
+  {
+    for (r in seq_len(nrow(pairs_all))) {
+      yvar <- pairs_all$Y[r]
+      zvar <- pairs_all$Z[r]
+      result_name <- comparison_names[r]
+
+      cat(
+        sprintf(
+          "\n[%d/%d] Running %s\n",
+          r,
+          nrow(pairs_all),
+          result_name
+        )
+      )
+      flush.console()
+
+      mdat <- cbind(
+        cID = df_clean$SEQN,
+        Y   = df_clean[[yvar]],
+        Z   = df_clean[[zvar]]
+      )
+
+      results[[r]] <- sub_ASD(
+        mdat = mdat,
+        cl = cl,
+        m_sub = m_sub,
+        seed = seed,
+        npctiles = npctiles,
+        K = K,
+        useZ = "prespecified",
+        Zvals = get_zvals(zvar)
+      )
+
+      cat(
+        sprintf(
+          "[%d/%d] Completed %s\n",
+          r,
+          nrow(pairs_all),
+          result_name
+        )
+      )
+      flush.console()
+
+      # Save a checkpoint after every completed comparison.
+      saveRDS(
+        list(
+          results = results,
+          pairs_all = pairs_all,
+          comparison_names = comparison_names
+        ),
+        file = save_file
+      )
+    }
+  },
+  finally = {
+    try(
+      parallel::stopCluster(cl),
+      silent = TRUE
+    )
+  }
+)
+
+# Do not construct a summary from an incomplete run. This prevents R from
+# silently recycling a partial results vector across all rows of pairs_all.
+completed <- !vapply(
+  results,
+  is.null,
+  logical(1)
+)
+
+if (!all(completed)) {
+  stop(
+    sprintf(
+      "Only %d of %d comparisons completed. The checkpoint RDS was saved, but no summary CSV was written.",
+      sum(completed),
+      length(completed)
+    )
+  )
+}
 
 
 # ==================================================================================================
@@ -626,33 +629,22 @@ parallel::stopCluster(
 # ==================================================================================================
 
 summary_res <- data.frame(
-
-  comparison = names(results),
-
+  comparison = comparison_names,
+  direction = pairs_all$direction,
   Y = pairs_all$Y,
-
   Z = pairs_all$Z,
-
-  z_stouffer = sapply(
+  Z_cutpoints = pairs_all$Z_cutpoints,
+  z_stouffer = vapply(
     results,
-    function(x) {
-
-      x$z_stouffer
-
-    }
+    function(x) x$z_stouffer,
+    numeric(1)
   ),
-
-  p_stouffer = sapply(
+  p_stouffer = vapply(
     results,
-    function(x) {
-
-      x$p_stouffer
-
-    }
+    function(x) x$p_stouffer,
+    numeric(1)
   ),
-
   row.names = NULL
-
 )
 
 
@@ -671,53 +663,57 @@ summary_res
 
 
 # ==================================================================================================
-# 15. CREATE AND SAVE RESULTS TABLE
+# 15. OPTIONAL RESULTS TABLE IMAGE
 # ==================================================================================================
 
-library(gt)
+# The CSV above is the reproducible analysis output. Set this to TRUE only
+# when a rendered PNG summary is also desired. Keeping it FALSE avoids
+# possible webshot/chromote processes keeping the R session open.
+save_table_png <- FALSE
 
+if (save_table_png) {
+  library(gt)
 
-results_table <- summary_res %>%
-  select(
-    Y,
-    Z,
-    z_stouffer,
-    p_stouffer
-  ) %>%
-  gt() %>%
-  cols_label(
-    Y = "Y Variable",
-    Z = "Z Variable",
-    z_stouffer = "Stouffer Z",
-    p_stouffer = "P-value"
-  ) %>%
-  fmt_number(
-    columns = z_stouffer,
-    decimals = 3
-  ) %>%
-  fmt_number(
-    columns = p_stouffer,
-    decimals = 4
-  ) %>%
-  tab_header(
-    title = "NHANES Cross-Set Association Tests"
-  ) %>%
-  tab_options(
-    table.font.size = 14,
-    heading.title.font.size = 18,
-    data_row.padding = px(6)
+  results_table <- summary_res %>%
+    select(
+      direction,
+      Y,
+      Z,
+      Z_cutpoints,
+      z_stouffer,
+      p_stouffer
+    ) %>%
+    gt() %>%
+    cols_label(
+      direction = "Direction",
+      Y = "Y Variable",
+      Z = "Z Variable",
+      Z_cutpoints = "Z Cutpoints",
+      z_stouffer = "Stouffer Z",
+      p_stouffer = "P-value"
+    ) %>%
+    fmt_number(
+      columns = z_stouffer,
+      decimals = 3
+    ) %>%
+    fmt_number(
+      columns = p_stouffer,
+      decimals = 4
+    ) %>%
+    tab_header(
+      title = "NHANES Bidirectional DS / FS / Periodontal Subgroup Informativeness Tests"
+    ) %>%
+    tab_options(
+      table.font.size = 14,
+      heading.title.font.size = 18,
+      data_row.padding = px(6)
+    )
+
+  gtsave(
+    results_table,
+    filename = file.path(
+      results_dir,
+      "ASD_cross_set_results_table.png"
+    )
   )
-
-
-# Display the table in RStudio.
-results_table
-
-
-# Save the table as an image.
-gtsave(
-  results_table,
-  filename = file.path(
-    results_dir,
-    "ASD_cross_set_results_table.png"
-  )
-)
+}

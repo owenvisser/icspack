@@ -1,9 +1,0 @@
-"comparison","direction","Y","Z","Z_cutpoints","z_stouffer","p_stouffer"
-"Y_DFS__Z_maxCAL","Caries Y / Periodontal Z","DFS","maxCAL","2.5, 3.5, 4.5",65.3501279372521,0
-"Y_DFSI__Z_maxCAL","Caries Y / Periodontal Z","DFSI","maxCAL","2.5, 3.5, 4.5",29.0633138494056,0
-"Y_DFS__Z_maxPD","Caries Y / Periodontal Z","DFS","maxPD","3.5, 4.5, 5.5",11.873735933012,0
-"Y_DFSI__Z_maxPD","Caries Y / Periodontal Z","DFSI","maxPD","3.5, 4.5, 5.5",2.3769906781152,0.00872726461444273
-"Y_maxCAL__Z_DFS","Periodontal Y / Caries Z","maxCAL","DFS","0.5",116.559117408376,0
-"Y_maxPD__Z_DFS","Periodontal Y / Caries Z","maxPD","DFS","0.5",132.209393002289,0
-"Y_maxCAL__Z_DFSI","Periodontal Y / Caries Z","maxCAL","DFSI","0.5",54.1085528532773,0
-"Y_maxPD__Z_DFSI","Periodontal Y / Caries Z","maxPD","DFSI","0.5",74.4992739111477,0

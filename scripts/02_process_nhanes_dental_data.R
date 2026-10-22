@@ -479,13 +479,13 @@ Caries_tooth <- Caries_long %>%
     # Every tooth has two interproximal surfaces
     Num_Interprox_Surfaces = 2,
 
-    # Continuous scores represent the proportion of tooth surfaces affected
+    # DS/FS measure proportions of surfaces; DFS/DFSI allow both decay and filling per surface
     DS_score = DS_Tooth / Num_Surfaces,
     DSI_score = DS_Tooth_Interprox / Num_Interprox_Surfaces,
     FS_score = FS_Tooth / Num_Surfaces,
     FSI_score = FS_Tooth_Interprox / Num_Interprox_Surfaces,
-    DFS_score = DFS_Tooth / Num_Surfaces,
-    DFSI_score = DFS_Tooth_Interprox / Num_Interprox_Surfaces,
+    DFS_score = DFS_Tooth / (2 * Num_Surfaces),
+    DFSI_score = DFS_Tooth_Interprox / (2 * Num_Interprox_Surfaces),
     DMFS_score = DMFS_Tooth / Num_Surfaces,
     DMFSI_score = DMFS_Tooth_Interprox / Num_Interprox_Surfaces,
 

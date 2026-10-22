@@ -123,14 +123,18 @@ X_vars <- c(
   "DS_score",
   "FS_score",
   "DSI_score",
-  "FSI_score"
+  "FSI_score",
+  "DFS_score",
+  "DFSI_score"
 )
 
 K_vars <- c(
   "DS",
   "FS",
   "DSI",
-  "FSI"
+  "FSI",
+  "DFS",
+  "DFSI"
 )
 
 
@@ -338,7 +342,9 @@ K_order <- c(
   "FS",
   "FSI",
   "DS",
-  "DSI"
+  "DSI",
+  "DFS",
+  "DFSI"
 )
 
 
@@ -593,3 +599,4 @@ for (age_group in age_groups) {
     )
   )
 }
+

@@ -119,7 +119,9 @@ X_vars <- c(
   "DS",
   "FS",
   "DSI",
-  "FSI"
+  "FSI",
+  "DFS",
+  "DFSI"
 )
 
 K_vars <- X_vars
@@ -284,7 +286,9 @@ K_order <- c(
   "FS",
   "FSI",
   "DS",
-  "DSI"
+  "DSI",
+  "DFS",
+  "DFSI"
 )
 
 

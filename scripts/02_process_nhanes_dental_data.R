@@ -376,25 +376,25 @@ Perio_long <- Perio_long %>%
     No_PD = ifelse(Mild_PD == 1 | Moderate_PD == 1 | Severe_PD == 1, 0, 1)
   )
 
+
+
+
+
 # CATEGORIZE DENTAL CARIES
 
-# Get the tooth-level caries variables for all included teeth
 caries_vars <- unlist(teeth_list %>% select(CTC, CSC), use.names = FALSE)
 
 Caries_long <- peri.uid %>%
-  # Retain participant ID and caries variables for all included teeth
   select(
     SEQN,
     all_of(caries_vars)
   ) %>%
-  # Pivot tooth-level caries variables from wide to long format
   pivot_longer(
     cols = all_of(caries_vars),
     names_to = "ToothCodename",
     values_to = "Measurement",
     values_transform = as.character
   ) %>%
-  # Separate NHANES variable names into tooth number and measurement code
   mutate(
     ToothNumber = as.numeric(substr(ToothCodename, 4, 5)),
     MeasurementCode = substr(ToothCodename, 6, 8)
@@ -404,55 +404,67 @@ Caries_long <- peri.uid %>%
     names_from = MeasurementCode,
     values_from = Measurement
   ) %>%
-  # Identify individual decayed and restored surfaces from the CSC surface code
   mutate(
-    `0` = ifelse(CTC %in% c("Z", "K") & grepl("0", CSC), 1, 0),
-    `1` = ifelse(CTC %in% c("Z", "K") & grepl("1", CSC), 1, 0),
-    `2` = ifelse(CTC %in% c("Z", "K") & grepl("2", CSC), 1, 0),
-    `3` = ifelse(CTC %in% c("Z", "K") & grepl("3", CSC), 1, 0),
-    `4` = ifelse(CTC %in% c("Z", "K") & grepl("4", CSC), 1, 0),
-    `5` = ifelse(CTC %in% c("Z", "K") & grepl("5", CSC), 1, 0),
-    `6` = ifelse(CTC %in% c("Z", "K") & grepl("6", CSC), 1, 0),
-    `7` = ifelse(CTC %in% c("Z", "K") & grepl("7", CSC), 1, 0),
-    `8` = ifelse(CTC %in% c("Z", "K") & grepl("8", CSC), 1, 0),
-    `9` = ifelse(CTC %in% c("Z", "K") & grepl("9", CSC), 1, 0)
+    CTC = trimws(CTC),
+    CSC = na_if(trimws(CSC), ""),
+
+    # Anterior teeth have four surfaces; posterior teeth have five
+    Num_Surfaces = if_else(
+      ToothNumber %in% c(6:11, 22:27),
+      4L, 5L
+    ),
+    Num_Interprox_Surfaces = 2L,
+
+    # NHANES code C denotes a full crown
+    is_crown = CTC %in% c("Z", "K") &
+      !is.na(CSC) & grepl("C", CSC, fixed = TRUE)
   ) %>%
-  select(-CSC) %>%
-  # Calculate decayed, filled, and missing surface counts for each tooth
+
+  # Count decayed and filled surfaces from NHANES 2011-2014 codes
   mutate(
-    DS_interprox = case_when(
-      CTC %in% c("Z", "K") ~ `3` + `4`,
-      CTC == "J" ~ 2,
-      TRUE ~ 0
-    ),
     DS = case_when(
-      CTC %in% c("Z", "K") ~ `0` + `1` + `2` + `3` + `4`,
-      CTC == "J" & ToothNumber %in% c(6:11, 22:27) ~ 4,
-      CTC == "J" ~ 5,
-      TRUE ~ 0
+      CTC %in% c("S", "D") ~ 0L,
+      is_crown ~ 0L,
+      CTC %in% c("Z", "K") & !is.na(CSC) ~
+        stringr::str_count(CSC, "[0-4]"),
+      TRUE ~ NA_integer_
     ),
-    FS_interprox = case_when(
-      CTC %in% c("Z", "K") ~ `8` + `9`,
-      CTC == "T" ~ 2,
-      TRUE ~ 0
+    DS_interprox = case_when(
+      CTC %in% c("S", "D") ~ 0L,
+      is_crown ~ 0L,
+      CTC %in% c("Z", "K") & !is.na(CSC) ~
+        stringr::str_count(CSC, "[34]"),
+      TRUE ~ NA_integer_
     ),
     FS = case_when(
-      CTC %in% c("Z", "K") ~ `5` + `6` + `7` + `8` + `9`,
-      CTC == "T" & ToothNumber %in% c(6:11, 22:27) ~ 4,
-      CTC == "T" ~ 5,
-      TRUE ~ 0
+      CTC %in% c("S", "D") ~ 0L,
+      is_crown ~ Num_Surfaces,
+      CTC %in% c("Z", "K") & !is.na(CSC) ~
+        stringr::str_count(CSC, "[5-9]"),
+      TRUE ~ NA_integer_
+    ),
+    FS_interprox = case_when(
+      CTC %in% c("S", "D") ~ 0L,
+      is_crown ~ Num_Interprox_Surfaces,
+      CTC %in% c("Z", "K") & !is.na(CSC) ~
+        stringr::str_count(CSC, "[89]"),
+      TRUE ~ NA_integer_
+    ),
+
+    # Missing because of dental disease contributes to DMFS
+    MS = case_when(
+      CTC %in% c("E", "R", "P") ~ Num_Surfaces,
+      CTC %in% c("S", "D", "Z", "K") ~ 0L,
+      TRUE ~ NA_integer_
     ),
     MS_interprox = case_when(
-      CTC %in% c("E", "R", "P") ~ 2,
-      TRUE ~ 0
-    ),
-    MS = case_when(
-      CTC %in% c("E", "R", "P") & ToothNumber %in% c(6:11, 22:27) ~ 4,
-      CTC %in% c("E", "R", "P") ~ 5,
-      TRUE ~ 0
+      CTC %in% c("E", "R", "P") ~ Num_Interprox_Surfaces,
+      CTC %in% c("S", "D", "Z", "K") ~ 0L,
+      TRUE ~ NA_integer_
     )
   ) %>%
-  # Create tooth-level surface counts for decay, restorations, and caries experience
+
+  # Create additive surface counts
   mutate(
     DS_Tooth = DS,
     DS_Tooth_Interprox = DS_interprox,
@@ -460,36 +472,36 @@ Caries_long <- peri.uid %>%
     FS_Tooth_Interprox = FS_interprox,
     DFS_Tooth = DS + FS,
     DFS_Tooth_Interprox = DS_interprox + FS_interprox,
-    DMFS_Tooth = DS + FS + MS,
-    DMFS_Tooth_Interprox = DS_interprox + FS_interprox + MS_interprox
-  )
+
+    # Missing teeth contribute to DMFS, not DFS
+    DMFS_Tooth = case_when(
+      CTC %in% c("E", "R", "P") ~ MS,
+      !is.na(DFS_Tooth) ~ DFS_Tooth,
+      TRUE ~ NA_integer_
+    ),
+    DMFS_Tooth_Interprox = case_when(
+      CTC %in% c("E", "R", "P") ~ MS_interprox,
+      !is.na(DFS_Tooth_Interprox) ~ DFS_Tooth_Interprox,
+      TRUE ~ NA_integer_
+    )
+  ) %>%
+  select(-CSC, -is_crown)
 
 
 # CREATE TOOTH-LEVEL CARIES DATA
 
 Caries_tooth <- Caries_long %>%
   mutate(
-    # Anterior teeth have four measured surfaces and posterior teeth have five
-    Num_Surfaces = ifelse(
-      ToothNumber %in% c(6:11, 22:27),
-      4,
-      5
-    ),
-
-    # Every tooth has two interproximal surfaces
-    Num_Interprox_Surfaces = 2,
-
-    # DS/FS measure proportions of surfaces; DFS/DFSI allow both decay and filling per surface
+    # Continuous scores: proportion of affected surfaces
     DS_score = DS_Tooth / Num_Surfaces,
     DSI_score = DS_Tooth_Interprox / Num_Interprox_Surfaces,
     FS_score = FS_Tooth / Num_Surfaces,
     FSI_score = FS_Tooth_Interprox / Num_Interprox_Surfaces,
-    DFS_score = DFS_Tooth / (2 * Num_Surfaces),
-    DFSI_score = DFS_Tooth_Interprox / (2 * Num_Interprox_Surfaces),
+    DFS_score = DFS_Tooth / Num_Surfaces,
+    DFSI_score = DFS_Tooth_Interprox / Num_Interprox_Surfaces,
     DMFS_score = DMFS_Tooth / Num_Surfaces,
     DMFSI_score = DMFS_Tooth_Interprox / Num_Interprox_Surfaces,
 
-    # Group teeth into anatomical regions
     Tooth_type = case_when(
       ToothNumber %in% c(2, 3, 14, 15) ~ "Upper Molars",
       ToothNumber %in% c(4, 5, 12, 13) ~ "Upper Premolars",
@@ -506,15 +518,15 @@ Caries_tooth <- Caries_long %>%
 
 Caries_tooth_level <- Caries_tooth %>%
   mutate(
-    # Binary indicators identify whether any affected surface is present on the tooth
-    DS = ifelse(DS_score > 0, 1, 0),
-    DSI = ifelse(DSI_score > 0, 1, 0),
-    FS = ifelse(FS_score > 0, 1, 0),
-    FSI = ifelse(FSI_score > 0, 1, 0),
-    DFS = ifelse(DFS_score > 0, 1, 0),
-    DFSI = ifelse(DFSI_score > 0, 1, 0),
-    DMFS = ifelse(DMFS_score > 0, 1, 0),
-    DMFSI = ifelse(DMFSI_score > 0, 1, 0)
+    # Binary indicators for informative subgroup weighting
+    DS = as.integer(DS_Tooth > 0),
+    DSI = as.integer(DS_Tooth_Interprox > 0),
+    FS = as.integer(FS_Tooth > 0),
+    FSI = as.integer(FS_Tooth_Interprox > 0),
+    DFS = as.integer(DFS_Tooth > 0),
+    DFSI = as.integer(DFS_Tooth_Interprox > 0),
+    DMFS = as.integer(DMFS_Tooth > 0),
+    DMFSI = as.integer(DMFS_Tooth_Interprox > 0)
   ) %>%
   select(
     SEQN,
@@ -541,30 +553,44 @@ Caries_tooth_level <- Caries_tooth %>%
 
 # CREATE PERSON-LEVEL CARIES SCORES
 
+# Sum observed counts, retaining NA when all values are missing
+sum_valid <- function(x) {
+  if (all(is.na(x))) NA_real_ else sum(x, na.rm = TRUE)
+}
+
 Caries_long <- Caries_long %>%
   group_by(SEQN) %>%
   summarise(
-    FS_score = sum(FS_Tooth, na.rm = TRUE),
-    FSI_score = sum(FS_Tooth_Interprox, na.rm = TRUE),
-    DS_score = sum(DS_Tooth, na.rm = TRUE),
-    DSI_score = sum(DS_Tooth_Interprox, na.rm = TRUE),
-    DFS_score = sum(DFS_Tooth, na.rm = TRUE),
-    DFSI_score = sum(DFS_Tooth_Interprox, na.rm = TRUE),
-    DMFS_score = sum(DMFS_Tooth, na.rm = TRUE),
-    DMFSI_score = sum(DMFS_Tooth_Interprox, na.rm = TRUE),
+    FS_score = sum_valid(FS_Tooth),
+    FSI_score = sum_valid(FS_Tooth_Interprox),
+    DS_score = sum_valid(DS_Tooth),
+    DSI_score = sum_valid(DS_Tooth_Interprox),
+    DFS_score = sum_valid(DFS_Tooth),
+    DFSI_score = sum_valid(DFS_Tooth_Interprox),
+    DMFS_score = sum_valid(DMFS_Tooth),
+    DMFSI_score = sum_valid(DMFS_Tooth_Interprox),
     .groups = "drop"
   ) %>%
   mutate(
-    # Binary person-level indicators identify whether any affected surface is present
-    `Surface Decay or Restoration (DFS)` = ifelse(DFS_score > 0, 1, 0),
-    `Surface Decay or Restoration on Interproximal Surfaces (DFSI)` = ifelse(DFSI_score > 0, 1, 0),
-    `Untreated Interproximal Dental Caries (DSI)` = ifelse(DSI_score > 0, 1, 0),
-    `Untreated Dental Caries (DS)` = ifelse(DS_score > 0, 1, 0),
-    `Treated Interproximal Dental Caries (FSI)` = ifelse(FSI_score > 0, 1, 0),
-    `Treated Dental Caries (FS)` = ifelse(FS_score > 0, 1, 0),
-    `Caries Experience (DMFS)` = ifelse(DMFS_score > 0, 1, 0),
-    `Interproximal Caries Experience (DMFSI)` = ifelse(DMFSI_score > 0, 1, 0)
+    # Binary person-level indicators of any affected surface
+    `Surface Decay or Restoration (DFS)` =
+      as.integer(DFS_score > 0),
+    `Surface Decay or Restoration on Interproximal Surfaces (DFSI)` =
+      as.integer(DFSI_score > 0),
+    `Untreated Interproximal Dental Caries (DSI)` =
+      as.integer(DSI_score > 0),
+    `Untreated Dental Caries (DS)` =
+      as.integer(DS_score > 0),
+    `Treated Interproximal Dental Caries (FSI)` =
+      as.integer(FSI_score > 0),
+    `Treated Dental Caries (FS)` =
+      as.integer(FS_score > 0),
+    `Caries Experience (DMFS)` =
+      as.integer(DMFS_score > 0),
+    `Interproximal Caries Experience (DMFSI)` =
+      as.integer(DMFSI_score > 0)
   )
+
 
 
 # CREATE DEMOGRAPHIC COVARIATES

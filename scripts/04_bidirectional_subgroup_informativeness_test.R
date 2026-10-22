@@ -4,7 +4,7 @@
 #
 # NHANES BIDIRECTIONAL DS / FS / PERIODONTAL SUBGROUP INFORMATIVENESS TESTING
 #
-# Tests DS, DSI, FS, and FSI against maxCAL and maxPD in both directions
+# Tests DS, DSI, FS, FSI, DFS, and DFSI against maxCAL and maxPD in both directions
 # using crspack::ASDpv().
 #
 # When a binary caries measure defines the subgroup, the only cutpoint is 0.5.
@@ -139,6 +139,8 @@ df_clean <- df_clean %>%
     FS,
     DSI,
     FSI,
+    DFS,
+    DFSI,
     maxCAL,
     maxPD
   ) %>%
@@ -164,9 +166,10 @@ set1 <- c(
   "DS",
   "FS",
   "DSI",
-  "FSI"
+  "FSI",
+  "DFS",
+  "DFSI"
 )
-
 
 # Periodontal variables.
 set2 <- c(

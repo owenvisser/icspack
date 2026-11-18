@@ -1,4 +1,3 @@
-# icspack analysis — rebuilt around `clustPear`
 
 This is a repository for the analysis done in the manuscript titled *Estimating the marginal association between paired outcomes in clustered data with application to caries and periodontal disease from the National Health and Nutrition Examination Survey* by Owen Visser, Bruce Dye, Shaoping Zhang, Victor Agboli, Steven Levy, and Somnath Datta. The correspondent for this repository is Owen Visser (email: owviss@gmail.com). `clustPear` is the sole computational engine for NW, CW, EQ and ER Pearson correlations and their cluster-sandwich delta-method standard errors.
 

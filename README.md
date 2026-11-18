@@ -23,7 +23,7 @@ Install the author's tested `clustPear` 0.1.2 package separately, plus the neces
 
 ```r
 install.packages(c("Rcpp", "tibble", "here", "foreign", "dplyr", "tidyr", "stringr", "ggplot2", "remotes"))
-
+remotes::install_github("owenvisser/clustPear")
 ```
 
 The C++ statistical implementation comes only from installed `clustPear`, so it is kept fast and generic.

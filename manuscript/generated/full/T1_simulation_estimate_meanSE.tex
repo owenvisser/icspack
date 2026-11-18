@@ -1,0 +1,22 @@
+\begin{table}[!t]
+\caption{Mean Pearson correlation (mean delta-method cluster-sandwich standard error) for each simulation setting at $K=20$. Each entry averages 1000 simulation replicates, with 100 potential observations in each of 100 clusters. EQ and ER use averaged cluster influence contributions; ER is exhaustive only when all split pairs are evaluated, otherwise it is a capped reference.}
+\label{tab:sim_estse20}
+\centering\small\setlength{\tabcolsep}{3pt}
+\begin{tabular}{ccrrrr}
+\toprule
+$\rho_{uv}$ & $\eta$ & $\rho_0$ & NW & CW & EQ & ER \\
+\midrule
+0.00 & 0 & 0.167 & 0.167 (0.067) & 0.167 (0.067) & 0.223 (0.048) & 0.227 (0.049) \\
+0.25 & 0 & 0.333 & 0.334 (0.060) & 0.334 (0.060) & 0.341 (0.044) & 0.346 (0.044) \\
+0.50 & 0 & 0.500 & 0.499 (0.050) & 0.499 (0.050) & 0.464 (0.039) & 0.470 (0.039) \\
+\addlinespace[3pt]
+0.00 & 2 & 0.167 & 0.070 (0.069) & 0.117 (0.068) & 0.184 (0.051) & 0.186 (0.052) \\
+0.25 & 2 & 0.333 & 0.240 (0.065) & 0.289 (0.063) & 0.309 (0.048) & 0.313 (0.048) \\
+0.50 & 2 & 0.500 & 0.415 (0.054) & 0.461 (0.053) & 0.439 (0.042) & 0.445 (0.042) \\
+\addlinespace[3pt]
+0.00 & 4 & 0.167 & -0.023 (0.072) & 0.063 (0.069) & 0.138 (0.055) & 0.138 (0.056) \\
+0.25 & 4 & 0.333 & 0.149 (0.070) & 0.239 (0.065) & 0.274 (0.052) & 0.276 (0.052) \\
+0.50 & 4 & 0.500 & 0.321 (0.061) & 0.413 (0.056) & 0.409 (0.046) & 0.413 (0.046) \\
+\bottomrule
+\end{tabular}
+\end{table}

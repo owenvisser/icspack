@@ -1,14 +1,10 @@
-data/sim/
-
-some_Dat/
-
-results/sim/
-
-figures/sim/
-
-#blocking custom files
-scripts/08_custom.R
-scripts/09_custom.R
-scripts/10_custom.R
-scripts/10_build_heatmaps.R
-scripts/10b_build_special_heatmap.R
+data/*.csv
+data/*.rds
+data/*.RData
+data-raw/*/*.XPT
+results/*
+!results/.gitkeep
+figures/*
+!figures/.gitkeep
+.Rhistory
+.Rproj.user/

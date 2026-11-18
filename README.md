@@ -18,7 +18,7 @@ Four-year MEC weights are sampling weights in the estimating equations through `
 
 ## Installation
 
-Install the author's tested `clustPear` 0.1.2 package separately, plus the necessary R packages:
+Install the `clustPear` package separately, plus the necessary R packages:
 
 ```r
 install.packages(c("Rcpp", "tibble", "here", "foreign", "dplyr", "tidyr", "stringr", "ggplot2", "remotes"))
